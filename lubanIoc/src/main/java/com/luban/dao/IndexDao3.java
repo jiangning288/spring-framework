@@ -11,11 +11,12 @@ import java.lang.reflect.Proxy;
 public class IndexDao3 implements BeanPostProcessor {
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-		if (beanName.equals("indexDao")){
-			bean = Proxy.newProxyInstance(this.getClass().getClassLoader(),new Class[]{Dao.class},new MyInvocationHandler(bean));
-
-		}
-		return bean;
+//		if (beanName.equals("indexDao")){
+//			bean = Proxy.newProxyInstance(this.getClass().getClassLoader(),new Class[]{Dao.class},new MyInvocationHandler(bean));
+//
+//		}
+//		return bean;
+		return null;
 	}
 
 	@Override
