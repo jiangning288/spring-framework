@@ -75,6 +75,7 @@ public interface FactoryBean<T> {
 	 * @see FactoryBeanNotInitializedException
 	 */
 	@Nullable
+	//创建对象bean 具体创建具体对象是由此getObject()方法来创建并返回的
 	T getObject() throws Exception;
 
 	/**
@@ -97,6 +98,7 @@ public interface FactoryBean<T> {
 	 * @see ListableBeanFactory#getBeansOfType
 	 */
 	@Nullable
+	//指定创建的具体bean对象的类型
 	Class<?> getObjectType();
 
 	/**
@@ -124,6 +126,7 @@ public interface FactoryBean<T> {
 	 * @see #getObject()
 	 * @see SmartFactoryBean#isPrototype()
 	 */
+	//设置创建的对象是否单例，可以不重写默认是单例的，如果需要设置原型需要重写此方法，返回false
 	default boolean isSingleton() {
 		return true;
 	}

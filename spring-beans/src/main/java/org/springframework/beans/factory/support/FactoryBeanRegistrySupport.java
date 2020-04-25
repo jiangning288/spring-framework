@@ -44,6 +44,13 @@ import org.springframework.lang.Nullable;
 public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanRegistry {
 
 	/** Cache of singleton objects created by FactoryBeans: FactoryBean name --> object */
+	/*
+	* 在容器初始话的时候调用getbean的时候会去创建一次bean，再创建的时候发现如果这个bean是FactoryBean类型的，
+	* 则会调用FactoryBean的getObject方法，得到这个方法返回的对象，并且如果这个bean是单例的，
+	* 会缓存到一个名为factoryBeanObjectCache的ConcurrentHashMap中，key（beanname）就是当前FactoryBean的beanname,
+	* 下次拿的时候如果是原型的，则每次都会去调用FactoryBean的getObject方法拿到原型对象，
+	* 如果是单例的，则直接在缓存factoryBeanObjectCache中根据beanname去拿到单例对象并返回。
+	* */
 	private final Map<String, Object> factoryBeanObjectCache = new ConcurrentHashMap<>(16);
 
 

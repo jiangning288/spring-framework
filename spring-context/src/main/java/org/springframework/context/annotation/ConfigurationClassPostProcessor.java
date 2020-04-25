@@ -253,7 +253,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
 		}
 		//给配置类产生cglib代理
-		//为什么需要产生cglib代理？
+		//为什么需要产生cglib代理？—>使得Appconfig类中的new instance()方法之被执行一次！
 		enhanceConfigurationClasses(beanFactory);
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
 	}
@@ -284,7 +284,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 				}
 			}
 			//判断是否是Configuration类，如果加了Configuration下面的这几个注解就不再判断了
-			// 还有  add(Component.class.getName());
+			// 还有 candidateIndicators.add(Component.class.getName());
 			//		candidateIndicators.add(ComponentScan.class.getName());
 			//		candidateIndicators.add(Import.class.getName());
 			//		candidateIndicators.add(ImportResource.class.getName());
@@ -342,6 +342,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
 		do {
+			// parse解析（重要）！！
 			parser.parse(candidates);
 			parser.validate();
 			//map.keyset
