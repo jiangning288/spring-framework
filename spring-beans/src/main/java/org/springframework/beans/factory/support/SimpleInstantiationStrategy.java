@@ -58,9 +58,11 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 
 
 	@Override
+	//默认的构造方法
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
-		//检测 bean 配置中是否配置了 lookup-method 或 replace-method
+		//如果没有方法被覆盖,通过BeanUtils#instantiateClass来初始化(实质是利用反射来创建)
+		//即：检测 bean 配置中是否配置了 lookup-method 或 replace-method
 		//如果配置了就需使用 CGLIB 构建 bean 对象
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
@@ -69,6 +71,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 				if (constructorToUse == null) {
 					final Class<?> clazz = bd.getBeanClass();
 					if (clazz.isInterface()) {
+						//如果clazz是接口类型的,直接抛BeanInstantiationException异常
 						throw new BeanInstantiationException(clazz, "Specified class is an interface");
 					}
 					try {
@@ -77,8 +80,10 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
 						}
 						else {
+							//获取构造方法
 							constructorToUse =	clazz.getDeclaredConstructor();
 						}
+						//将constructorToUse赋给resolvedConstructorOrFactoryMethod属性
 						bd.resolvedConstructorOrFactoryMethod = constructorToUse;
 					}
 					catch (Throwable ex) {
@@ -86,6 +91,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 					}
 				}
 			}
+			 //通过BeanUtils直接使用构造器对象实例化Bean对象
 			return BeanUtils.instantiateClass(constructorToUse);
 		}
 		else {
@@ -105,9 +111,10 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	}
 
 	@Override
+	//
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
 			final Constructor<?> ctor, @Nullable Object... args) {
-
+		//判断是否有方法需要重载
 		if (!bd.hasMethodOverrides()) {
 			if (System.getSecurityManager() != null) {
 				// use own privileged to change accessibility (when security is on)
@@ -116,9 +123,11 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 					return null;
 				});
 			}
+			// 通过 BeanUtils直接使用构造器对象实例化Bean对象
 			return (args != null ? BeanUtils.instantiateClass(ctor, args) : BeanUtils.instantiateClass(ctor));
 		}
 		else {
+			//初始化CGLB对象
 			return instantiateWithMethodInjection(bd, beanName, owner, ctor, args);
 		}
 	}
@@ -149,17 +158,22 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 			else {
 				ReflectionUtils.makeAccessible(factoryMethod);
 			}
-
+			//获取之前的方法
 			Method priorInvokedFactoryMethod = currentlyInvokedFactoryMethod.get();
 			try {
+				//将新的工厂方法保存到currentlyInvokedFactoryMethod中
 				currentlyInvokedFactoryMethod.set(factoryMethod);
+				//创建bean对象
 				Object result = factoryMethod.invoke(factoryBean, args);
+				//没创建成功,则创建一个nullBean来代替
 				if (result == null) {
 					result = new NullBean();
 				}
+				//创建成功的话,直接返回
 				return result;
 			}
 			finally {
+				//覆盖之前的方法
 				if (priorInvokedFactoryMethod != null) {
 					currentlyInvokedFactoryMethod.set(priorInvokedFactoryMethod);
 				}

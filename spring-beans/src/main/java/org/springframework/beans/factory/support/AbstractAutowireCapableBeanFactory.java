@@ -485,6 +485,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		try {
 			// 在 bean 初始化前应用后置处理，如果后置处理返回的 bean 不为空，则直接返回
 			//这个类需要通过代码演示
+			//需要实现InstantiationAwareBeanPostProcessor这个后置处理器。相等于spring不帮你维护类中的依赖了。Spring不推荐使用。
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
@@ -540,7 +541,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (instanceWrapper == null) {
 			/**
 			 * 创建 bean 实例，并将实例包裹在 BeanWrapper 实现类对象中返回。
-			 * createBeanInstance中包含三种创建 bean 实例的方式：
+			 * createBeanInstance中包含三种创建 bean 实例的方式：（三种策略public interface InstantiationStrategy）
 			 *   1. 通过工厂方法创建 bean 实例
 			 *   2. 通过构造方法自动注入（autowire by constructor）的方式创建 bean 实例
 			 *   3. 通过无参构造方法方法创建 bean 实例
@@ -1108,6 +1109,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					"Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
 		}
 
+		//待分析
 		Supplier<?> instanceSupplier = mbd.getInstanceSupplier();
 		if (instanceSupplier != null) {
 			return obtainFromSupplier(instanceSupplier, beanName);
@@ -1118,6 +1120,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		 * 如果工厂方法不为空，则通过工厂方法构建 bean 对象
 		 * 这种构建 bean 的方式可以自己写个demo去试试
 		 * 源码就不做深入分析了，有兴趣的同学可以和我私下讨论
+		 * 在xml文件中，给bean配上factory-method，注解好像不支持
 		 */
 		if (mbd.getFactoryMethodName() != null)  {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
@@ -1156,7 +1159,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Candidate constructors for autowiring?
 		//由后置处理器决定返回哪些构造方法
+		//如果你写了一个无参构造方法，那这里还是会返回空，因为spring会认为等于没有写，用下面的默认无参构造方法进行初始化
+		//如果你写了一个有参构造方法，这里会返回有参构造方法
+		//如果你写了多个构造方法，spring不知道要用那个，这里还是会返回空
+		//通过这个AutowiredAnnotationBeanPostProcessor后置处理器处理
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args))  {
 			return autowireConstructor(beanName, mbd, ctors, args);
@@ -1304,7 +1312,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected BeanWrapper autowireConstructor(
 			String beanName, RootBeanDefinition mbd, @Nullable Constructor<?>[] ctors, @Nullable Object[] explicitArgs) {
-
+		//此处的this就是AbstractAutowireCapableBeanFactory
 		return new ConstructorResolver(this).autowireConstructor(beanName, mbd, ctors, explicitArgs);
 	}
 

@@ -259,7 +259,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		 * 这个方法在初始化的时候会调用，在getBean的时候也会调用
 		 * 为什么需要这么做呢？
 		 * 也就是说spring在初始化的时候先获取这个对象
-		 * 判断这个对象是否被实例化好了(普通情况下绝对为空====有一种情况可能不为空)
+		 * 判断这个对象是否被实例化好了(普通情况下绝对为空====有一种情况可能不为空（lazy-init==true）)
 		 * 从spring的bean容器中获取一个bean，由于spring中bean容器是一个map（singletonObjects）
 		 * 所以你可以理解getSingleton(beanName)等于beanMap.get(beanName)
 		 * 由于方法会在spring环境初始化的时候（就是对象被创建的时候调用一次）调用一次
@@ -277,6 +277,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		 *
 		 * lazy
 		 */
+		// 这里是第一次getSingleton 里面的判断if (singletonObject == null && isSingletonCurrentlyInCreation(beanName))
+		// isSingletonCurrentlyInCreation 表示正在创建的bean是不是一个单例，但我们第一次getSingleton，还没有放到这个set，
+		// 是在第二次getSingleton中放的
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			//这里的代码是对于日志的记录，方便我们以后阅读应该注释，不影响spring功能
@@ -359,6 +362,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				// Create bean instance.
 				if (mbd.isSingleton()) {
+					//这里是第二个getSingleton（一切都判断好了，开始准备创建bean
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							return createBean(beanName, mbd, args);

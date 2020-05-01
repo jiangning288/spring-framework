@@ -104,21 +104,53 @@ class ConstructorResolver {
 	 * @param beanName the name of the bean
 	 * @param mbd the merged bean definition for the bean
 	 * @param chosenCtors chosen candidate constructors (or {@code null} if none)
+	 *  explicitArgs参数值通过getBean方法以编程方式传递，*或{@code null}（如果没有）（->使用bean定义中的构造函数参数值）
 	 * @param explicitArgs argument values passed in programmatically via the getBean method,
 	 * or {@code null} if none (-> use constructor argument values from bean definition)
 	 * @return a BeanWrapper for the new instance
 	 */
+	/**
+	 *
+	 * 创建 BeanWrapperImpl 对象
+	 * 构造候选方法只有一个的情况，满足就构造
+	 * 构造候选方法多个的情况，获取构造方法和参数列表，并排序
+	 * 排序规则是，优先public和参数多的
+	 * 如果有个public而且参数多于需要的参数，选之
+	 * 其次，选择参数相等的，参数不足的直接忽略
+	 * 参数相等的情况，做类型转化，计算一个typeDiffWeight，相似参数的度量，选择最相似的，如果多个typeDiffWeight相等，那么报错。
+	 * 最后调用instantiate生成beanInstance的Object放到包装类BeanWrapper中，返回BeanWrapper
+	 *
+	 */
 	public BeanWrapper autowireConstructor(String beanName, RootBeanDefinition mbd,
 			@Nullable Constructor<?>[] chosenCtors, @Nullable Object[] explicitArgs) {
-		//实力一个BeanWrapperImpl 对象很好理解
+		//实例一个BeanWrapperImpl 对象很好理解
 		//前面外部返回的BeanWrapper 其实就是这个BeanWrapperImpl
 		//因为BeanWrapper是个接口
+		//如果要拿到的对象，可以调用BeanWrapper中的getWrappedInstance()
 		BeanWrapperImpl bw = new BeanWrapperImpl();
 		this.beanFactory.initBeanWrapper(bw);
 
+		//接下来Spring要决定用哪个构造方法来实例化bean
+		//代码执行到这里Spring已经决定要采用一个特殊构造方法来实例bean
+		//但是到底执行哪个? （还不知道，因为可能类提供了很多构造方法）
+		//到底用哪个，Spring有自己的一套规则
+		//当他找到一个之后，他就会把这个构造方法
+		//确定用哪个构造方法赋值给constructorToUse
 		Constructor<?> constructorToUse = null;
+
+		//构造方法的值，注意不是参数
+		//我们可以用构造方法通过反射来实例一个对象
+		//在调用反射来实例化对象的时候，需要把具体的值给方法
+		//这个变量就是用来记录这些值的，后面有证明
+		//但是这里需要注意的是ArgumentsHolder是一个数据结构
+		//argsToUse[] 才是真正的值
 		ArgumentsHolder argsHolderToUse = null;
+
+
+		//参数
 		Object[] argsToUse = null;
+
+
 		//确定参数值列表
 		//argsToUse可以有两种办法设置
 		//第一种通过beanDefinition设置
@@ -152,21 +184,26 @@ class ConstructorResolver {
 			// Need to resolve the constructor.
 			//判断构造方法是否为空，判断是否根据构造方法自动注入
 			boolean autowiring = (chosenCtors != null ||
+					//getResolvedAutowireMode方法逻辑是，如果是自适应注入方法就看有没有无参构造器，
+					// 如果存在就按照type类型注入，如果不存在就按照构造器方式注入，如果没有设置注入方式就不注入
+					//默认是no（0）
 					mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
 			ConstructorArgumentValues resolvedValues = null;
 
 			//定义了最小参数个数
 			//如果你给构造方法的参数列表给定了具体的值
-			//那么这些值得个数就是构造方法参数的个数
+			//那么这些值的个数就是构造方法参数的个数
 			int minNrOfArgs;
 			//mbd.getConstructorArgumentValues().addGenericArgumentValue("com.index.dao");
 			if (explicitArgs != null) {
+				//传入的构造参数不为空，这种构造器最小参数个数个传入的个数
 				minNrOfArgs = explicitArgs.length;
 			}
 			else {
+				//如果传的构造参数是空的，则从RootBeanDefinition中获取构造器参数，并解析对应的构造参数然后添加到ConstructorArgumentValues中
 				//实例一个对象，用来存放构造方法的参数值
 				//当中主要存放了参数值和参数值所对应的下表
-				//
+
 				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
 				resolvedValues = new ConstructorArgumentValues();
 				/**
@@ -177,7 +214,7 @@ class ConstructorResolver {
 				 *         <constructor-arg index="2" value="str2"/>
 				 *     </bean>
 				 *
-				 *     在通过spring内部给了一个值得情况那么表示你的构造方法的最小参数个数一定
+				 *     在通过spring内部给了一个值得情况，那么表示你的构造方法的最小参数个数
 				 *
 				 * minNrOfArgs = 3
 				 */
@@ -186,9 +223,11 @@ class ConstructorResolver {
 
 			// Take specified constructors, if any.
 			Constructor<?>[] candidates = chosenCtors;
+			//如果传入的构造器为空，则获取bean的Class对象，然后根据bean是不是public修饰的来按照不同的方式获取所有的构造器
 			if (candidates == null) {
 				Class<?> beanClass = mbd.getBeanClass();
 				try {
+					//getDeclaredConstructors返回所有的构造器（包括public和private修饰的），getConstructors返回public修饰的
 					candidates = (mbd.isNonPublicAccessAllowed() ?
 							beanClass.getDeclaredConstructors() : beanClass.getConstructors());
 				}
@@ -201,7 +240,7 @@ class ConstructorResolver {
 			//根据构造方法的访问权限级别和参数数量进行排序
 			//怎么排序的呢？
 			/**
-			 *  有限反问权限，继而参数个数
+			 * 按照访问方式和数量对构造器进行排序；public>protect>private，在同为public时参数多的排在前面
 			 *  这个自己可以写个测试去看看到底是不是和我说的一样
 			 * 1. public Luban(Object o1, Object o2, Object o3)
 			 * 2. public Luban(Object o1, Object o2)
@@ -239,18 +278,24 @@ class ConstructorResolver {
 					// do not look any further, there are only less greedy constructors left.
 					break;
 				}
+				//如果这个构造方法的参数个数小于最小的个数，直接进入下一次循环
 				if (paramTypes.length < minNrOfArgs) {
 					continue;
 				}
 
 				ArgumentsHolder argsHolder;
+				//没有找到合适的构造器就进行下面的步骤
+				//如果ConstructorArgumentValues不为空就说明有构造参数
 				if (resolvedValues != null) {
 					try {
 						//判断是否加了ConstructorProperties注解如果加了则把值取出来
 						//可以写个代码测试一下
 						//@ConstructorProperties(value = {"xxx", "111"})
+						//@ConstructorProperties标签的作用=======》构造函数上的注释，显示该构造函数的参数如何与构造对象的getter方法相对应
 						String[] paramNames = ConstructorPropertiesChecker.evaluate(candidate, paramTypes.length);
 						if (paramNames == null) {
+							//如果paramNames是空，则说明参数没有被获取到，
+							// 则在beanFactory中获取用于获取方法参数的ParameterNameDiscoverer对象，然后获取参数名称
 							ParameterNameDiscoverer pnd = this.beanFactory.getParameterNameDiscoverer();
 							if (pnd != null) {
 								//获取构造方法参数名称列表
@@ -314,6 +359,11 @@ class ConstructorResolver {
 				 * 这也解释了为什么他找到两个符合要求的方法不直接抛异常的原因
 				 * 如果这个ambiguousConstructors一直存在，spring会在循环外面去exception
 				 * 很牛逼呀！！！！
+				 *
+				 *
+				 *
+				 * //如果是宽松的构造策略，则对比spring构造的参数数组的类型和获取到的构造器参数的参数类型进行对比，返回不同的个数
+				 * //如果是严格的构造策略，则检查能否将构造的参数数组赋值到构造器参数的参数列表中
 				 */
 				int typeDiffWeight = (mbd.isLenientConstructorResolution() ?
 						argsHolder.getTypeDifferenceWeight(paramTypes) : argsHolder.getAssignabilityWeight(paramTypes));
@@ -369,6 +419,8 @@ class ConstructorResolver {
 			}
 		}
 
+		//下面步骤都是一样的，用上面得到的构造器（无论是从bean对象中获取的还是spring自己构建的）和参数来反射创建bean实例，
+		// 并放到BeanWrapperImpl对象中然后返回
 		try {
 			/*
 			 * 使用反射创建实例 lookup-method 通过CGLIB增强bean实例

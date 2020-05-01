@@ -215,7 +215,6 @@ final class PostProcessorRegistrationDelegate {
 
 		//从beanDefinitionMap中得到所有的BeanPostProcessor
 		String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
-
 		// Register BeanPostProcessorChecker that logs an info message when
 		// a bean is created during BeanPostProcessor instantiation, i.e. when
 		// a bean is not eligible for getting processed by all BeanPostProcessors.
@@ -243,7 +242,8 @@ final class PostProcessorRegistrationDelegate {
 				nonOrderedPostProcessorNames.add(ppName);
 			}
 		}
-		priorityOrderedPostProcessors.remove(1);
+		//下面这行代码是为了演示把后置处理器去掉。@Required注释就没用了。因为没有后置处理器去处理这个
+		//priorityOrderedPostProcessors.remove(1);
 		// First, register the BeanPostProcessors that implement PriorityOrdered.
 		sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
 		registerBeanPostProcessors(beanFactory, priorityOrderedPostProcessors);
@@ -272,7 +272,8 @@ final class PostProcessorRegistrationDelegate {
 		registerBeanPostProcessors(beanFactory, nonOrderedPostProcessors);
 
 		// Finally, re-register all internal BeanPostProcessors.
-		internalPostProcessors.remove(1);
+		//下面这行代码是为了演示把后置处理器去掉。@Required注释就没用了。因为没有后置处理器去处理这个
+		//internalPostProcessors.remove(1);
 		sortPostProcessors(internalPostProcessors, beanFactory);
 
 		registerBeanPostProcessors(beanFactory, internalPostProcessors);

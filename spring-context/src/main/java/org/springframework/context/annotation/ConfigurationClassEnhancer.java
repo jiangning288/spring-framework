@@ -356,6 +356,11 @@ class ConfigurationClassEnhancer {
 			// proxy that intercepts calls to getObject() and returns any cached bean instance.
 			// This ensures that the semantics of calling a FactoryBean from within @Bean methods
 			// is the same as that of referring to a FactoryBean within XML. See SPR-6602.
+			/*
+			* 首先，检查请求的bean是否是FactoryBean。如果是，则创建一个子类代理，该代理拦截对getObject（）的调用并返回任何缓存的bean实例。
+			* 这确保了从@Bean方法中调用FactoryBean的语义与在XML中引用FactoryBean的语义相同。
+			*
+			* */
 			if (factoryContainsBean(beanFactory, BeanFactory.FACTORY_BEAN_PREFIX + beanName) &&
 					factoryContainsBean(beanFactory, beanName)) {
 				Object factoryBean = beanFactory.getBean(BeanFactory.FACTORY_BEAN_PREFIX + beanName);

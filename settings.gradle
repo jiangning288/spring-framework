@@ -30,6 +30,6 @@ rootProject.children.each {project ->
 	project.buildFileName = "${project.name}.gradle"
 }
 include 'lubanIoc'
-
-
+include 'Spring-IOC'
+findProject(':Spring-IOC')?.name = 'springIOC'
 
