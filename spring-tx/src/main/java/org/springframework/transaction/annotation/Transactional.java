@@ -36,6 +36,7 @@ import org.springframework.transaction.TransactionDefinition;
  * does not have to know about annotations. If no rules are relevant to the exception,
  * it will be treated like
  * {@link org.springframework.transaction.interceptor.DefaultTransactionAttribute}
+ * //在{RuntimeException}和{Error}上回滚，但不在选中的异常上回滚
  * (rolling back on {@link RuntimeException} and {@link Error} but not on checked
  * exceptions).
  *

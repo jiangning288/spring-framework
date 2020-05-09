@@ -66,7 +66,7 @@ public abstract aspect AbstractTransactionAspect extends TransactionAspectSuppor
 	Object around(final Object txObject): transactionalMethodExecution(txObject) {
 		MethodSignature methodSignature = (MethodSignature) thisJoinPoint.getSignature();
 		// Adapt to TransactionAspectSupport's invokeWithinTransaction...
-		try {
+		try {                                                                               //protected org.springframework.transaction.interceptor.TransactionAspectSupport.InvocationCallback
 			return invokeWithinTransaction(methodSignature.getMethod(), txObject.getClass(), new InvocationCallback() {
 				public Object proceedWithInvocation() throws Throwable {
 					return proceed(txObject);

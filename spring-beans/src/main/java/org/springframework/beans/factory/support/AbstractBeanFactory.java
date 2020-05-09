@@ -279,7 +279,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		 */
 		// 这里是第一次getSingleton 里面的判断if (singletonObject == null && isSingletonCurrentlyInCreation(beanName))
 		// isSingletonCurrentlyInCreation 表示正在创建的bean是不是一个单例，但我们第一次getSingleton，还没有放到这个set，
-		// 是在第二次getSingleton中放的
+		// 是在第二次getSingleton中放的（见下面），这个isSingletonCurrentlyInCreation 就是用来解决循环依赖的！！
+		// 因为当A中依赖B，B去getBean的时候，就会发现A是正在创建中。然后从（singletonFactories）拿！
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			//这里的代码是对于日志的记录，方便我们以后阅读应该注释，不影响spring功能
@@ -362,7 +363,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				// Create bean instance.
 				if (mbd.isSingleton()) {
-					//这里是第二个getSingleton（一切都判断好了，开始准备创建bean
+					//这里是第二个getSingleton（一切都判断好了，开始准备创建bean）
+					//这个getSingleton中会把这个bean加入isSingletonCurrentlyInCreation，表示这个bean正在创建
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							return createBean(beanName, mbd, args);

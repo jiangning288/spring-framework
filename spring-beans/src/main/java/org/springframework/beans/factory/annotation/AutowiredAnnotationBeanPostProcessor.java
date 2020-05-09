@@ -582,6 +582,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 				Assert.state(beanFactory != null, "No BeanFactory available");
 				TypeConverter typeConverter = beanFactory.getTypeConverter();
 				try {
+					//拿出循环依赖后得到的值（new A  ->  new B  ->  new A  -  return B — 判断type -- A set B )
 					value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
 				}
 				catch (BeansException ex) {
@@ -595,6 +596,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 							if (autowiredBeanNames.size() == 1) {
 								String autowiredBeanName = autowiredBeanNames.iterator().next();
 								if (beanFactory.containsBean(autowiredBeanName) &&
+										//进行类型匹配判断（用到了三级缓存）
 										beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
 									this.cachedFieldValue = new ShortcutDependencyDescriptor(
 											desc, autowiredBeanName, field.getType());

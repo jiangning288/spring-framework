@@ -43,6 +43,7 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.transaction.support.DefaultTransactionDefinition
  * @see org.springframework.transaction.interceptor.TransactionAttribute
  */
+//事务定义
 public interface TransactionDefinition {
 
 	/**

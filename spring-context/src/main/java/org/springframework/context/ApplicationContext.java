@@ -55,6 +55,16 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.BeanFactory
  * @see org.springframework.core.io.ResourceLoader
  */
+
+/**
+ * 提供应用程序配置的中央接口。
+ * Spring IOC容器就是一个org.springframework.context.ApplicationContext的实例化对象
+ * 例如： AnnotationConfigApplicationContext、ClassPathXmlApplicationContext
+ * 容器负责了实例化，配置以及装配一个bean。
+ *
+ * 从代码层次来看：Spring容器就是一个实现了ApplicationContext接口的对象，
+ * 从功能上来看： Spring 容器是 Spring 框架的核心，是用来管理对象的。容器将创建对象，把它们连接在一起，配置它们，并管理他们的整个生命周期从创建到销毁。
+ */
 public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory,
 		MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
 

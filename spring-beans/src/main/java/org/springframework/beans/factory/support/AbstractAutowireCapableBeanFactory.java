@@ -487,6 +487,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			//这个类需要通过代码演示
 			//需要实现InstantiationAwareBeanPostProcessor这个后置处理器。相等于spring不帮你维护类中的依赖了。Spring不推荐使用。
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
+			//第一次调用后置处理器
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
 				return bean;
@@ -549,6 +550,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			 * 若 bean 的配置信息中配置了 lookup-method 和 replace-method，则会使用 CGLIB
 			 * 增强 bean 实例。关于lookup-method和replace-method后面再说。
 			 */
+			// 实例化对象，里面第二次调用后置处理器
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		final Object bean = instanceWrapper.getWrappedInstance();
@@ -561,6 +563,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
+					//第三次调用后置处理器
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
@@ -573,6 +576,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
+		//判断是否允许循环依赖
+		// this.allowCircularReferences这个属性可以通过setAllowCircularReferences来关闭循环依赖
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
 		if (earlySingletonExposure) {
@@ -580,6 +585,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				logger.debug("Eagerly caching bean '" + beanName +
 						"' to allow for resolving potential circular references");
 			}
+			//把刚刚new出来的bean put 到 SingletonFactory中去(为了给第一次getSingletonObjcet用）
+			//第四次调用后置处理器。判断是否需要AOP
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -587,8 +594,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Object exposedObject = bean;
 		try {
 			//设置属性，非常重要
+			//也就是我们常常说的自动注入
+			//里面会完成第五次和第六次后置处理器的调用
 			populateBean(beanName, mbd, instanceWrapper);
+			//初始化Spring
 			//执行后置处理器，aop就是在这里完成的处理
+			//里面会进行第七次和第八次后置处理器的调用
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -912,6 +923,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
 		Object exposedObject = bean;
+		//第四次addSingletonFactory ---SmartInstantiationAwareBeanPostProcessor---getEarlyBeanReference
+		//得到一个体现暴露的对象----对象不是bean（在spring容器当中，并且由sping自己产生的）
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
@@ -1025,6 +1038,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param beanName the name of the bean
 	 * @see MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition
 	 */
+	//第三次applyMergedBeanDefinitionPostProcessors---MergedBeanDefinitionPostProcessor---postProcessMergedBeanDefinition
+	//缓存注解信息
 	protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class<?> beanType, String beanName) {
 		for (BeanPostProcessor bp : getBeanPostProcessors()) {
 			if (bp instanceof MergedBeanDefinitionPostProcessor) {
@@ -1049,8 +1064,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 				Class<?> targetType = determineTargetType(beanName, mbd);
 				if (targetType != null) {
+					//第一次 执行InstantiationAwareBeanPostProcessor 的postProcessBeforeInstantiation
+					//在bean没有开始实例化之前执行
+					//如果返回null，则继续正常流程执行
 					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
 					if (bean != null) {
+						//如果不是空则直接执行BeanPostProcessorsAfterInitialization，直接返回bean，结束流程。
 						bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
 					}
 				}
@@ -1099,6 +1118,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
 		// Make sure bean class is actually resolved at this point.
+		// 获取这个bean的class属性，确保beanDefinition中beanClass属性已经完成解析
+		// 我们通过xml从<bean>标签中解析出来的class属性在刚刚开始的时候必定是个字符串
 		Class<?> beanClass = resolveBeanClass(mbd, beanName);
 
 		/**
@@ -1163,6 +1184,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		//如果你写了一个有参构造方法，这里会返回有参构造方法
 		//如果你写了多个构造方法，spring不知道要用那个，这里还是会返回空
 		//通过这个AutowiredAnnotationBeanPostProcessor后置处理器处理
+		// 第二次调用后置处理器进行构造方法推断
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
 
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
@@ -1234,7 +1256,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	@Nullable
 	protected Constructor<?>[] determineConstructorsFromBeanPostProcessors(@Nullable Class<?> beanClass, String beanName)
 			throws BeansException {
-
+		//第二次determineConstructorsFromBeanPostProcessors---SmartInstantiationAwareBeanPostProcessor--determineCandidateConstructors
+		//推断构造方法
 		if (beanClass != null && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
@@ -1339,7 +1362,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
 		boolean continueWithPropertyPopulation = true;
-
+		//第五次populateBean-----InstantiationAwareBeanPostProcessor--postProcessAfterInstantiation
+		//判断你的bean需不需要完成属性填充
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
@@ -1378,6 +1402,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (pvs == null) {
 				pvs = mbd.getPropertyValues();
 			}
+			//第六次populateBean-------- InstantiationAwareBeanPostProcessor---postProcessPropertyValues
+			// 属性填充---自动注入
 			PropertyDescriptor[] filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
 			if (hasInstAwareBpps) {
 				for (BeanPostProcessor bp : getBeanPostProcessors()) {
@@ -1728,17 +1754,23 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}, getAccessControlContext());
 		}
 		else {
+			//执行Aware方法
 			invokeAwareMethods(beanName, bean);
 		}
 
 		Object wrappedBean = bean;
 		if (mbd == null || !mbd.isSynthetic()) {
-			//执行后置处理的befor
+			//执行后置处理的before  注意@PostC是在这里处理的
+			//@postconstruct is not part of the spring.
+			// It is part of javax package. Both are the same.
+			// using init-method we need to added in xml file.
+			// If you use @postconstruct adding in xml is not required.
+			//第七次----BeanPostProcessor----postProcessBeforeInitialization
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
 		try {
-			//执行bean的声明周期回调中的init方法
+			//执行bean的声明周期回调中的init方法（XML中配置的init-method）
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {
@@ -1747,7 +1779,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					beanName, "Invocation of init method failed", ex);
 		}
 		if (mbd == null || !mbd.isSynthetic()) {
-			//执行后置处理器的after方法
+			//执行后置处理器的after方法 例如AOP
+			//第八次----BeanPostProcessor----PostProcessorsAfterInitialization
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 

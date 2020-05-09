@@ -128,6 +128,8 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 	 * return false.
 	 * @see TransactionAttribute#rollbackOn(java.lang.Throwable)
 	 */
+	//txInfo.transactionAttribute.rollbackOn(ex)
+	//会进来判断
 	@Override
 	public boolean rollbackOn(Throwable ex) {
 		if (logger.isTraceEnabled()) {

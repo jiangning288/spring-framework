@@ -2,6 +2,8 @@ package com.jn.config;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 
 /**
@@ -11,7 +13,9 @@ import org.springframework.context.annotation.Configuration;
  * @create: 2020-04-30 23:56
  **/
 @Configuration
-@ComponentScan({"com.jn.*"})
+//@EnableTransactionManagement
+@ComponentScan("com.jn")
+//@EnableAspectJAutoProxy(exposeProxy = true)
 public class AppConfig {
 
 }

@@ -338,6 +338,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 * @see #doBegin
 	 */
 	@Override
+	// 这里就是判断7种传播方式的地方
 	public final TransactionStatus getTransaction(@Nullable TransactionDefinition definition) throws TransactionException {
 		Object transaction = doGetTransaction();
 
@@ -348,12 +349,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			// Use defaults if no transaction definition given.
 			definition = new DefaultTransactionDefinition();
 		}
-
+		//当前存在事务
 		if (isExistingTransaction(transaction)) {
 			// Existing transaction found -> check propagation behavior to find out how to behave.
 			return handleExistingTransaction(definition, transaction, debugEnabled);
 		}
-
+        //如果当前不存在事务
 		// Check definition settings for new transaction.
 		if (definition.getTimeout() < TransactionDefinition.TIMEOUT_DEFAULT) {
 			throw new InvalidTimeoutException("Invalid transaction timeout", definition.getTimeout());

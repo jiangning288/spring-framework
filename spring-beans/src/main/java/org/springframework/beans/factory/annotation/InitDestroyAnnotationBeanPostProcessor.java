@@ -131,9 +131,11 @@ public class InitDestroyAnnotationBeanPostProcessor
 	}
 
 	@Override
+	//处理@postC
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
 		LifecycleMetadata metadata = findLifecycleMetadata(bean.getClass());
 		try {
+			// 执行回调方法
 			metadata.invokeInitMethods(bean, beanName);
 		}
 		catch (InvocationTargetException ex) {

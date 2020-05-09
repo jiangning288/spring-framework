@@ -283,7 +283,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
 		final PlatformTransactionManager tm = determineTransactionManager(txAttr);
 		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
-
+		//是否需要开启事务
 		if (txAttr == null || !(tm instanceof CallbackPreferringPlatformTransactionManager)) {
 			// Standard transaction demarcation with getTransaction and commit/rollback calls.
 			TransactionInfo txInfo = createTransactionIfNecessary(tm, txAttr, joinpointIdentification);
@@ -291,10 +291,12 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			try {
 				// This is an around advice: Invoke the next interceptor in the chain.
 				// This will normally result in a target object being invoked.
+				//环绕通知。按事务的执行业务代码
 				retVal = invocation.proceedWithInvocation();
 			}
 			catch (Throwable ex) {
 				// target invocation exception
+				//执行异常
 				completeTransactionAfterThrowing(txInfo, ex);
 				throw ex;
 			}
@@ -471,6 +473,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		TransactionStatus status = null;
 		if (txAttr != null) {
 			if (tm != null) {
+				//得到一个事务
 				status = tm.getTransaction(txAttr);
 			}
 			else {
@@ -540,11 +543,13 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	 * @param ex throwable encountered
 	 */
 	protected void completeTransactionAfterThrowing(@Nullable TransactionInfo txInfo, Throwable ex) {
+
 		if (txInfo != null && txInfo.getTransactionStatus() != null) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Completing transaction for [" + txInfo.getJoinpointIdentification() +
 						"] after exception: " + ex);
 			}
+			//进入回滚
 			if (txInfo.transactionAttribute != null && txInfo.transactionAttribute.rollbackOn(ex)) {
 				try {
 					txInfo.getTransactionManager().rollback(txInfo.getTransactionStatus());
@@ -560,6 +565,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				}
 			}
 			else {
+			//不进入回滚
 				// We don't roll back on this exception.
 				// Will still roll back if TransactionStatus.isRollbackOnly() is true.
 				try {
@@ -678,6 +684,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	 * Concrete interceptors/aspects adapt this to their invocation mechanism.
 	 */
 	@FunctionalInterface
+	//protected
 	protected interface InvocationCallback {
 
 		Object proceedWithInvocation() throws Throwable;
