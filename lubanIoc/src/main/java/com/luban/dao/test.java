@@ -1,8 +1,9 @@
 package com.luban.dao;
 
-import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.support.FactoryBeanRegistrySupport;
-import org.springframework.stereotype.Component;
+		import com.luban.test.Test;
+		import org.springframework.beans.factory.FactoryBean;
+		import org.springframework.beans.factory.support.FactoryBeanRegistrySupport;
+		import org.springframework.stereotype.Component;
 
 /**
  * @program: spring
@@ -11,14 +12,14 @@ import org.springframework.stereotype.Component;
  * @create: 2020-04-27 04:20
  **/
 @Component
-public class test implements FactoryBean {
+public class test implements FactoryBean<test2>{
 	@Override
-	public Object getObject() throws Exception {
+	public test2 getObject() throws Exception {
 		return new test2();
 	}
 
 	@Override
-	public Class<?> getObjectType() {
+	public Class<test2> getObjectType() {
 		return test2.class;
 	}
 

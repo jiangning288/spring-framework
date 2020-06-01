@@ -6,7 +6,6 @@ import com.jn.dao.UserDao;
 import com.jn.dao.dao;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import sun.misc.ProxyGenerator;
 
 import java.io.*;
 import java.lang.reflect.InvocationHandler;

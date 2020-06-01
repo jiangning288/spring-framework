@@ -31,5 +31,4 @@ rootProject.children.each {project ->
 }
 include 'lubanIoc'
 include 'Spring-IOC'
-findProject(':Spring-IOC')?.name = 'springIOC'
 
